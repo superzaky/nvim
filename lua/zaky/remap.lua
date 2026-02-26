@@ -1,7 +1,7 @@
 -- space is my leader button
 vim.g.mapleader =  " "
 -- when opening a folder and then a file via VIM, then you can press space pv to go back to the browser page
-vim.keymap.set("n", "<leader>pv", vim.cmd.Ex)
+vim.keymap.set("n", "<leader>cd", vim.cmd.Ex)
 
 -- onderstaande auto refresh werkt niet, dus gebruik iets anders
 -- -- Create a variable to track the state
