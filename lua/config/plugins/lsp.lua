@@ -2,8 +2,9 @@ return {
     {
         "neovim/nvim-lspconfig",
         dependencies = {
-            "williamboman/mason.nvim", -- plugin to install LSP's
+            "williamboman/mason.nvim",
             "williamboman/mason-lspconfig.nvim",
+            "nvim-telescope/telescope.nvim", -- Assumed to be installed for references
         },
 
         config = function()
@@ -12,12 +13,10 @@ return {
                 ensure_installed = { "lua_ls", "bashls" },
             })
 
-            -- 1. Grab the capabilities from nvim-cmp
-            -- This tells the LSP: "Hey, I have a fancy autocomplete menu!"
             local capabilities = require('cmp_nvim_lsp').default_capabilities()
             local lsp = vim.lsp
 
-            -- 2. Setup servers
+            -- 1. Setup servers
             if lsp.config then
                 -- Native Neovim 0.11+ way
                 lsp.config('lua_ls', {
@@ -50,9 +49,19 @@ return {
             vim.api.nvim_create_autocmd('LspAttach', {
                 callback = function(args)
                     local opts = { buffer = args.buf }
+                    
+                    -- Core LSP keymaps
                     vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
                     vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
                     vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
+                    
+                    -- Renaming
+                    vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
+
+                    -- Telescope Keymaps (Requires telescope.nvim plugin)
+                    vim.keymap.set('n', 'gr', require('telescope.builtin').lsp_references, opts)
+                    vim.keymap.set('n', 'gi', require('telescope.builtin').lsp_implementations, opts)
+                    vim.keymap.set('n', 'gs', require('telescope.builtin').lsp_document_symbols, opts)
                 end,
             })
         end
