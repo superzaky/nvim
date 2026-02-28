@@ -16,3 +16,16 @@ vim.opt.clipboard = "unnamedplus"
 vim.opt["tabstop"] = 4
 vim.opt["shiftwidth"] = 4
 
+-- regarding line numbers
+vim.opt.nu = true
+vim.opt.relativenumber = true
+
+-- REGARDING SPLITTING WINDOWS
+-- splitbelow = true: When you create a horizontal split (using :split or :sp), 
+-- the new window will open below your current one. (The default is above, which often feels upside down).
+
+-- splitright = true: When you create a vertical split (using :vsplit or :vs), 
+-- the new window will open to the right of your current one. (The default is the left).
+vim.opt.splitbelow = true
+vim.opt.splitright = true
+

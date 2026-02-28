@@ -2,6 +2,15 @@
 vim.g.mapleader =  " "
 -- when opening a folder and then a file via VIM, then you can press space pv to go back to the browser page
 vim.keymap.set("n", "<leader>cd", vim.cmd.Ex)
+-- You can highlight a word, press <leader>p, highlight another word, press <leader>p again, 
+-- and it will keep pasting the same original text every single time.
+vim.keymap.set("x", "<leader>p", "\"_dP")
+
+-- Move between splitted windows easily
+vim.keymap.set('n', '<C-h>', '<C-w>h') -- Move left
+vim.keymap.set('n', '<C-j>', '<C-w>j') -- Move down
+vim.keymap.set('n', '<C-k>', '<C-w>k') -- Move up
+vim.keymap.set('n', '<C-l>', '<C-w>l') -- Move right
 
 -- onderstaande auto refresh werkt niet, dus gebruik iets anders
 -- -- Create a variable to track the state
