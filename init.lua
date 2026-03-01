@@ -29,3 +29,5 @@ vim.opt.relativenumber = true
 vim.opt.splitbelow = true
 vim.opt.splitright = true
 
+-- This allows you to not keep search results highlighted after you are done with your search
+vim.opt.hlsearch = false

@@ -1,0 +1,33 @@
+return {
+    "mfussenegger/nvim-dap",
+    dependencies = {
+        "mfussenegger/nvim-dap-python",
+        "rcarriga/nvim-dap-ui",
+        "nvim-neotest/nvim-nio",
+    },
+    config = function()
+        local dap = require("dap")
+        local dap_python = require("dap-python")
+
+        -- 1. Point to the debugpy path installed by Mason
+        -- Adjust this path if your Mason folder is elsewhere
+        -- local path = "~/.local/share/nvim/mason/packages/debugpy/venv/bin/python"
+        local mason_path = vim.fn.stdpath("data") .. "/mason/packages/debugpy/venv/bin/python"
+        -- dap_python.setup(path)
+        dap_python.setup(mason_path)
+
+        -- 2. Basic Keymaps for Debugging
+        vim.keymap.set('n', '<leader>dc', function() dap.continue() end, { desc = "Debug: Continue" })
+        -- vim.keymap.set('n', '<F5>', function() dap.continue() end, { desc = "Debug: Start/Continue" })
+        vim.keymap.set('n', '<F10>', function() dap.step_over() end, { desc = "Debug: Step Over" })
+        vim.keymap.set('n', '<F11>', function() dap.step_into() end, { desc = "Debug: Step Into" })
+        vim.keymap.set('n', '<leader>b', function() dap.toggle_breakpoint() end, { desc = "Debug: Toggle Breakpoint" })
+
+        -- 3. UI Setup (Optional but very helpful)
+        local dapui = require("dapui")
+        dapui.setup()
+        dap.listeners.after.event_initialized["dapui_config"] = function() dapui.open() end
+        dap.listeners.before.event_terminated["dapui_config"] = function() dapui.close() end
+        dap.listeners.before.event_exited["dapui_config"] = function() dapui.close() end
+    end,
+}

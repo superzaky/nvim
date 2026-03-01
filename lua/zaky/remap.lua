@@ -12,6 +12,22 @@ vim.keymap.set('n', '<C-j>', '<C-w>j') -- Move down
 vim.keymap.set('n', '<C-k>', '<C-w>k') -- Move up
 vim.keymap.set('n', '<C-l>', '<C-w>l') -- Move right
 
+-- to move text while in visual mode
+vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
+vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
+-- this takes the line below you and append to your current line, while letting your cursor to remain on the same place.
+vim.keymap.set("n", "J", "mzJ`z")
+
+-- this allows page jumping with ctrl+d or ctrl+u, while letting your cursor remain on the middle
+vim.keymap.set("n", "<C-d>", "<C-d>zz")
+vim.keymap.set("n", "<C-u>", "<C-u>zz")
+
+-- this allows your cursor to remain on the middle, while navigating your search results
+vim.keymap.set("n", "n", "nzzzv")
+vim.keymap.set("n", "N", "Nzzzv")
+
+
+
 -- onderstaande auto refresh werkt niet, dus gebruik iets anders
 -- -- Create a variable to track the state
 -- vim.g.auto_refresh_enabled = false
