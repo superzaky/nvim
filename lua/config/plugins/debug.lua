@@ -18,6 +18,7 @@ return {
 
         -- 2. Basic Keymaps for Debugging
         vim.keymap.set('n', '<leader>dc', function() dap.continue() end, { desc = "Debug: Continue" })
+        -- for some reason F5 moves the cursor only downwards in qterminal and does not start the debugger for some reason, so that is why we comment the line below
         -- vim.keymap.set('n', '<F5>', function() dap.continue() end, { desc = "Debug: Start/Continue" })
         vim.keymap.set('n', '<F10>', function() dap.step_over() end, { desc = "Debug: Step Over" })
         vim.keymap.set('n', '<F11>', function() dap.step_into() end, { desc = "Debug: Step Into" })
@@ -29,5 +30,19 @@ return {
         dap.listeners.after.event_initialized["dapui_config"] = function() dapui.open() end
         dap.listeners.before.event_terminated["dapui_config"] = function() dapui.close() end
         dap.listeners.before.event_exited["dapui_config"] = function() dapui.close() end
+
+        -- Automatic configuration for python
+        dap.configurations.python = {
+            {
+                type = 'python',
+                request = 'launch',
+                name = "Launch file",
+                program = "${file}", -- This tells it to run the current file
+                pythonPath = function()
+                    -- This finds the python path automatically
+                    return 'python3'
+                end,
+            },
+        }
     end,
 }
