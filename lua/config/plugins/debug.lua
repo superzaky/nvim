@@ -9,10 +9,21 @@ return {
         local dap = require("dap")
         local dap_python = require("dap-python")
 
+        -- Detect if we are on Windows
+        if vim.fn.has("win32") == 1 then
+            -- Point directly to your trusted system Python
+            local sys_python = "C:/Users/z.huraibi/AppData/Local/Programs/Python/Python313/python.exe"
+            -- Use the 'python' adapter type but point it to your system install
+            dap_python.setup(sys_python)
+        else
+            -- Linux setup remains the same
+            local mason_path = vim.fn.stdpath("data") .. "/mason/packages/debugpy/venv/bin/python"
+            dap_python.setup(mason_path)
+        end
         -- 1. Point to the debugpy path installed by Mason
         -- Adjust this path if your Mason folder is elsewhere
         -- local path = "~/.local/share/nvim/mason/packages/debugpy/venv/bin/python"
-        local mason_path = vim.fn.stdpath("data") .. "/mason/packages/debugpy/venv/bin/python"
+        -- local mason_path = vim.fn.stdpath("data") .. "/mason/packages/debugpy/venv/bin/python"
         -- dap_python.setup(path)
         dap_python.setup(mason_path)
 
