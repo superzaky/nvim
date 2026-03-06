@@ -26,7 +26,10 @@ vim.keymap.set("n", "<C-u>", "<C-u>zz")
 vim.keymap.set("n", "n", "nzzzv")
 vim.keymap.set("n", "N", "Nzzzv")
 
-
+-- Clean and then Build
+-- vim.keymap.set('n', '<leader>fc', ':!dotnet clean; dotnet build<CR>', { desc = '[F]ormat [C]lean & Build' })
+-- For Windows Neovim users
+vim.keymap.set('n', '<leader>fc', '<cmd>!dotnet clean && dotnet build<CR>', { desc = 'Clean and Build' })
 
 -- onderstaande auto refresh werkt niet, dus gebruik iets anders
 -- -- Create a variable to track the state
