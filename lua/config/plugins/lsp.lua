@@ -4,63 +4,79 @@ return {
         dependencies = {
             "williamboman/mason.nvim",
             "williamboman/mason-lspconfig.nvim",
-            "nvim-telescope/telescope.nvim", -- Assumed to be installed for references
+            "nvim-telescope/telescope.nvim",
+            "hrsh7th/cmp-nvim-lsp", -- Required for capabilities
         },
 
         config = function()
+            -- 1. Initialize Mason
             require("mason").setup()
+
+            local lspconfig = require("lspconfig")
+            
+            -- 2. Setup Capabilities (for Autocomplete support)
+            local capabilities = require('cmp_nvim_lsp').default_capabilities()
+
+            -- 3. Setup Mason-LSPConfig with Handlers
+            -- This is the "Magic" part for Windows: it automatically links Mason and Lspconfig
             require("mason-lspconfig").setup({
-                ensure_installed = { "lua_ls", "bashls" },
+                ensure_installed = { "lua_ls", "bashls", "omnisharp" },
+                handlers = {
+                    -- The first entry (without a key) is the default handler
+                    function(server_name)
+                        lspconfig[server_name].setup({
+                            capabilities = capabilities,
+                        })
+                    end,
+
+                    -- Specific configuration for OmniSharp
+                    ["omnisharp"] = function()
+                        lspconfig.omnisharp.setup({
+                            capabilities = capabilities,
+                            -- On Windows, 'OmniSharp' (with capital O and S) is the standard cmd name
+                            cmd = { "OmniSharp" }, 
+                            root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", ".git"),
+                            -- Optimizations for C# development
+                            enable_roslyn_analyzers = true,
+                            organize_imports_on_format = true,
+                            enable_import_completion = true,
+                            analyze_open_documents_only = true,
+                        })
+                    end,
+
+                    -- Specific configuration for Lua
+                    ["lua_ls"] = function()
+                        lspconfig.lua_ls.setup({
+                            capabilities = capabilities,
+                            settings = {
+                                Lua = {
+                                    diagnostics = {
+                                        globals = { "vim" },
+                                    },
+                                },
+                            },
+                        })
+                    end,
+                },
             })
 
-            local capabilities = require('cmp_nvim_lsp').default_capabilities()
-            local lsp = vim.lsp
-
-            -- 1. Setup servers
-            if lsp.config then
-                -- Native Neovim 0.11+ way
-                lsp.config('lua_ls', {
-                    capabilities = capabilities,
-                    settings = {
-                        Lua = { diagnostics = { globals = { "vim" } } }
-                    }
-                })
-                lsp.enable('lua_ls')
-
-                lsp.config('bashls', { capabilities = capabilities })
-                lsp.enable('bashls')
-            else
-                -- Fallback for Neovim 0.10 (Standard lspconfig)
-                local lspconfig = require("lspconfig")
-
-                lspconfig.lua_ls.setup({
-                    capabilities = capabilities,
-                    settings = {
-                        Lua = { diagnostics = { globals = { "vim" } } }
-                    }
-                })
-
-                lspconfig.bashls.setup({
-                    capabilities = capabilities
-                })
-            end
-
-            -- 3. Autocmd for keymaps 
+            -- 4. LSP Keymaps (LspAttach)
+            -- This triggers ONLY when a language server successfully connects to a buffer
             vim.api.nvim_create_autocmd('LspAttach', {
                 callback = function(args)
                     local opts = { buffer = args.buf }
-                    -- Core LSP keymaps
+                    
+                    -- Basic LSP Actions
                     vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
                     vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
                     vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
-
-                    -- Renaming
                     vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
 
-                    -- Telescope Keymaps (Requires telescope.nvim plugin)
-                    vim.keymap.set('n', 'gr', require('telescope.builtin').lsp_references, opts)
-                    vim.keymap.set('n', 'gi', require('telescope.builtin').lsp_implementations, opts)
-                    vim.keymap.set('n', 'gs', require('telescope.builtin').lsp_document_symbols, opts)
+                    -- Telescope LSP Pickers
+                    local builtin = require('telescope.builtin')
+                    vim.keymap.set('n', 'gr', builtin.lsp_references, opts)
+                    vim.keymap.set('n', 'gi', builtin.lsp_implementations, opts)
+                    vim.keymap.set('n', 'gs', builtin.lsp_document_symbols, opts)
                 end,
             })
         end
