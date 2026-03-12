@@ -11,6 +11,7 @@ return {
         local dap_python = require("dap-python")
 
         -- 1. Setup Python Path based on OS
+        local python_path = ""
         if vim.fn.has("win32") == 1 then
             python_path = "C:/Users/z.huraibi/AppData/Local/Programs/Python/Python313/python.exe"
         else
@@ -28,7 +29,45 @@ return {
             args = { '--interpreter=vscode' }
         }
 
+        -- Helper function to Build and then Debug
+        local function build_and_debug()
+            local session = dap.session()
+            
+            -- If a debug session is already running, terminate it first
+            -- This unlocks the DLL so 'dotnet build' can succeed
+            if session then
+                print("Terminating existing debug session...")
+                dap.terminate(nil, nil, function()
+                    -- We use the termination callback to ensure 
+                    -- the process has fully exited before building
+                    build_and_debug() 
+                end)
+                return
+            end
+
+            print("Cleaning and Building project...")
+            vim.fn.jobstart("dotnet clean && dotnet build", {
+                on_exit = function(_, code)
+                    if code == 0 then
+                        print("Build successful! Starting debugger...")
+                        dap.continue()
+                    else
+                        print("Build FAILED. Debugger aborted. (Is the app still running elsewhere?)")
+                    end
+                end
+            })
+        end
+
         -- 3. Debugging Keymaps
+        -- This now handles "Restart" gracefully
+        vim.keymap.set('n', '<F5>', build_and_debug, { desc = "Debug: Build and Start/Restart" })
+        
+        -- Manual Stop: Terminates the session and closes the UI
+        vim.keymap.set('n', '<F4>', function()
+            dap.terminate()
+            dapui.close()
+        end, { desc = "Debug: Stop and Close UI" })
+
         vim.keymap.set('n', '<leader>dc', function() dap.continue() end, { desc = "Debug: Continue" })
         vim.keymap.set('n', '<F10>', function() dap.step_over() end, { desc = "Debug: Step Over" })
         vim.keymap.set('n', '<F11>', function() dap.step_into() end, { desc = "Debug: Step Into" })
@@ -38,15 +77,24 @@ return {
         vim.keymap.set('n', '<leader>dr', function() dap.repl.toggle() end, { desc = "Debug: Toggle REPL" })
         vim.keymap.set('n', '<leader>di', function() require("dap.ui.widgets").hover() end, { desc = "Debug: Hover Info" })
         vim.keymap.set('n', '<leader>de', function() require("dapui").eval() end, { desc = "Debug: Evaluate Under Cursor" })
+        
         -- 4. UI Setup
         dapui.setup()
         
-        -- 5. Automate Opening Windows on Exception
+        -- 5. Automate Opening/Closing Windows
         dap.listeners.after.event_initialized["dapui_config"] = function()
             dapui.open()
         end
 
-        -- IMPORTANT: If the debugger stops on an exception, open the REPL automatically
+        -- Close UI automatically when the session terminates or exits
+        dap.listeners.before.event_terminated["dapui_config"] = function()
+            dapui.close()
+        end
+
+        dap.listeners.before.event_exited["dapui_config"] = function()
+            dapui.close()
+        end
+
         dap.listeners.after.event_stopped["dap_exception_info"] = function(_, body)
             if body.reason == "exception" then
                 print("Exception caught! Opening REPL for inspection...")
@@ -54,7 +102,7 @@ return {
             end
         end
 
-        -- 5. Custom Python Configurations
+        -- 6. Custom Python Configurations
         dap.configurations.python = {
             {
                 type = 'python',
@@ -80,22 +128,22 @@ return {
                 },
             },
         }
-        -- 6. Custom .NET Configurations
+
+        -- 7. Custom .NET Configurations
         dap.configurations.cs = {
             {
                 type = "coreclr",
                 name = "Launch - netcoredbg",
                 request = "launch",
                 program = function()
-                    -- Ensure we are selecting the Debug DLL specifically
-                    return vim.fn.input('Path to dll: ', vim.fn.getcwd() .. '/bin/Debug/net8.0/YOUR_APP_NAME_HERE.dll', 'file')
+                -- Ensure we are selecting the Debug DLL specifically
+                    return vim.fn.getcwd() .. '/bin/Debug/net8.0/YOUR_APP_NAME_HERE.dll'
                 end,
                 cwd = "${workspaceFolder}",
                 stopAtEntry = false,
-                -- THE FIX FOR HANGFIRE WARNINGS:
                 justMyCode = true,
                 symbolOptions = {
-                    loadAnySymbol = false, -- DO NOT load symbols for external libraries (Hangfire, etc.)
+                loadAnySymbol = false, -- DO NOT load symbols for external libraries (Hangfire, etc.)
                     moduleFilter = {
                         mode = "include",
                         names = { "YOUR_APP_NAME_HERE" } -- ONLY load symbols for your actual project name
