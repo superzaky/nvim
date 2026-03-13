@@ -31,6 +31,12 @@ vim.keymap.set("n", "N", "Nzzzv")
 -- For Windows Neovim users
 vim.keymap.set('n', '<leader>fc', '<cmd>!dotnet clean && dotnet build<CR>', { desc = 'Clean and Build' })
 
+-- Copy ONLY the filename (e.g., Program.cs)
+vim.keymap.set('n', '<leader>fn', function()
+    vim.fn.setreg('+', vim.fn.expand("%:t"))
+    print("Copied filename: " .. vim.fn.expand("%:t"))
+end, { desc = "Copy Filename" })
+
 -- onderstaande auto refresh werkt niet, dus gebruik iets anders
 -- -- Create a variable to track the state
 -- vim.g.auto_refresh_enabled = false
