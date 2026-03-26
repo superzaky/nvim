@@ -20,12 +20,42 @@ return {
             -- 3. Setup Mason-LSPConfig with Handlers
             -- This is the "Magic" part for Windows: it automatically links Mason and Lspconfig
             require("mason-lspconfig").setup({
-                ensure_installed = { "lua_ls", "bashls", "omnisharp" },
+                ensure_installed = { 
+                    "lua_ls", 
+                    "bashls", 
+                    "omnisharp", 
+                    "angularls", 
+                    "html", 
+                    "cssls", 
+                    "ts_ls" 
+                },
                 handlers = {
                     -- The first entry (without a key) is the default handler
                     function(server_name)
                         lspconfig[server_name].setup({
                             capabilities = capabilities,
+                        })
+                    end,
+
+                    -- Specific configuration for Angular
+                    ["angularls"] = function()
+                        lspconfig.angularls.setup({
+                            capabilities = capabilities,
+                            -- This helps the LSP find the "root" of your Angular project
+                            -- It looks for these files to realize it should start working
+                            root_dir = lspconfig.util.root_pattern("angular.json", "project.json", "package.json"),
+                            on_setup = function(new_config)
+                                -- This is a common fix for AngularLS on some systems to ensure 
+                                -- it handles templates correctly
+                                new_config.settings = {
+                                    angular = {
+                                        suggest = {
+                                            includeCompletionsWithSnippetText = true,
+                                            includeAutomaticOptionalChainCompletions = true,
+                                        }
+                                    }
+                                }
+                            end,
                         })
                     end,
 

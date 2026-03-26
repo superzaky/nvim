@@ -10,15 +10,9 @@ return {
             configs.setup({
                 -- Add languages you use here
                 ensure_installed = { 
-                    "lua", 
-                    "vim", 
-                    "vimdoc", 
-                    "query", 
-                    "markdown", 
-                    "markdown_inline",
-                    "bash" 
+                    "lua", "vim", "vimdoc", "query", "markdown", "markdown_inline", "bash",
+                    "html", "css", "typescript", "javascript" 
                 },
-                
                 -- Automatically install missing parsers when you open a new filetype (note currently set to false)
                 auto_install = false,
 

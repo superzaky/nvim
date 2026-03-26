@@ -32,6 +32,9 @@ return {
                     { name = "nvim_lsp" }, -- Get methods from LSP
                     { name = "luasnip" },  -- Snippets
                 }),
+                completion = {
+                    completeopt = "menu,menuone,noinsert",
+                },
             })
         end,
     },
