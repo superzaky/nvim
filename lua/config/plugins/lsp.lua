@@ -59,6 +59,18 @@ return {
                         })
                     end,
 
+                    -- Specific configuration for HTML (Prevents fighting with Angular)
+                    ["html"] = function()
+                        lspconfig.html.setup({
+                            capabilities = capabilities,
+                            root_dir = function(fname)
+                                local is_angular = lspconfig.util.root_pattern("angular.json", "project.json")(fname)
+                                if is_angular then return nil end
+                                return lspconfig.util.root_pattern("package.json", ".git")(fname)
+                            end,
+                        })
+                    end,
+
                     -- Specific configuration for OmniSharp
                     ["omnisharp"] = function()
                         lspconfig.omnisharp.setup({
@@ -90,11 +102,13 @@ return {
                 },
             })
 
-            -- 4. LSP Keymaps (LspAttach)
+            -- 4. LSP Keymaps & Autocommands (LspAttach)
             -- This triggers ONLY when a language server successfully connects to a buffer
             vim.api.nvim_create_autocmd('LspAttach', {
                 callback = function(args)
-                    local opts = { buffer = args.buf }
+                    local bufnr = args.buf
+                    local client = vim.lsp.get_client_by_id(args.data.client_id)
+                    local opts = { buffer = bufnr }
                     
                     -- Basic LSP Actions
                     vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
@@ -107,8 +121,31 @@ return {
                     vim.keymap.set('n', 'gr', builtin.lsp_references, opts)
                     vim.keymap.set('n', 'gi', builtin.lsp_implementations, opts)
                     vim.keymap.set('n', 'gs', builtin.lsp_document_symbols, opts)
+
+                    --  Document Highlight Logic
+                    if client and client.supports_method("textDocument/documentHighlight") then
+                        local highlight_augroup = vim.api.nvim_create_augroup("lsp-highlight", { clear = false })
+                        
+                        vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
+                            buffer = bufnr,
+                            group = highlight_augroup,
+                            callback = vim.lsp.buf.document_highlight,
+                        })
+
+                        vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+                            buffer = bufnr,
+                            group = highlight_augroup,
+                            callback = vim.lsp.buf.clear_references,
+                        })
+                    end
                 end,
             })
+
+            -- 5. Set the Highlight Colors (Visuals)
+            -- This makes the background of the occurrences subtle but visible
+            vim.api.nvim_set_hl(0, "LspReferenceText", { bg = "#3e4452", underline = true })
+            vim.api.nvim_set_hl(0, "LspReferenceRead", { bg = "#3e4452", underline = true })
+            vim.api.nvim_set_hl(0, "LspReferenceWrite", { bg = "#3e4452", bold = true, underline = true })
         end
     }
 }

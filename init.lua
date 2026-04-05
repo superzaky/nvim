@@ -3,6 +3,8 @@ require("config.lazy")
 require("zaky")
 print("hello")
 
+-- this is needed so that the hightlight config from lsp.lua will occur after 100ms
+vim.opt.updatetime = 100
 -- Set the number of spaces a <Tab> counts for
 vim.opt.tabstop = 4
 
