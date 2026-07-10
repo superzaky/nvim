@@ -17,7 +17,6 @@ return {
         else
             python_path = vim.fn.stdpath("data") .. "/mason/packages/debugpy/venv/bin/python"
         end
-        
         dap_python.setup(python_path)
 
         -- 2. Setup .NET Adapter (netcoredbg)
@@ -25,14 +24,16 @@ return {
             type = 'executable',
             -- Mason installs it to a 'bin' folder usually, but check your Mason install
             --   command = vim.fn.stdpath("data") .. '/mason/bin/netcoredbg' .. (vim.fn.has("win32") == 1 and ".exe" or ""),
-            command = 'C:/projects/netcoredbg/netcoredbg.exe',
-            args = { '--interpreter=vscode' }
+            command = "C:\\projects\\netcoredbg\\netcoredbg.exe",
+            args = { '--interpreter=vscode' },
+            options = {
+                detached = false
+            }
         }
 
         -- Helper function to Build and then Debug
         local function build_and_debug()
             local session = dap.session()
-            
             -- If a debug session is already running, terminate it first
             -- This unlocks the DLL so 'dotnet build' can succeed
             if session then
@@ -45,8 +46,8 @@ return {
                 return
             end
 
-            print("Cleaning and Building project...")
-            vim.fn.jobstart("dotnet clean && dotnet build", {
+            print("Building project...")
+            vim.fn.jobstart("dotnet build", {
                 on_exit = function(_, code)
                     if code == 0 then
                         print("Build successful! Starting debugger...")
@@ -59,10 +60,8 @@ return {
         end
 
         -- 3. Debugging Keymaps
-        -- This now handles "Restart" gracefully
         vim.keymap.set('n', '<F5>', build_and_debug, { desc = "Debug: Build and Start/Restart" })
         
-        -- Manual Stop: Terminates the session and closes the UI
         vim.keymap.set('n', '<F4>', function()
             dap.terminate()
             dapui.close()
@@ -86,20 +85,12 @@ return {
             dapui.open()
         end
 
-        -- Close UI automatically when the session terminates or exits
-        dap.listeners.before.event_terminated["dapui_config"] = function()
+        local doc_listeners = dap.listeners.before
+        doc_listeners.event_terminated["dapui_config"] = function()
             dapui.close()
         end
-
-        dap.listeners.before.event_exited["dapui_config"] = function()
+        doc_listeners.event_exited["dapui_config"] = function()
             dapui.close()
-        end
-
-        dap.listeners.after.event_stopped["dap_exception_info"] = function(_, body)
-            if body.reason == "exception" then
-                print("Exception caught! Opening REPL for inspection...")
-                dap.repl.open()
-            end
         end
 
         -- 6. Custom Python Configurations
@@ -126,33 +117,66 @@ return {
                         remoteRoot = ".",
                     },
                 },
-            },
+            }
         }
 
-        -- 7. Custom .NET Configurations
+        -- 7. Custom .NET Configurations (Robust Windows Path Handling)
         dap.configurations.cs = {
             {
                 type = "coreclr",
                 name = "Launch - netcoredbg",
                 request = "launch",
+                args = {}, 
                 program = function()
-                -- Ensure we are selecting the Debug DLL specifically
-                    return vim.fn.getcwd() .. '/bin/Debug/net8.0/YOUR_APP_NAME_HERE.dll'
+                    local cwd = vim.fn.getcwd()
+                    local function to_win(path)
+                        return path:gsub("/", "\\")
+                    end
+
+                    local paths_to_check = {
+                        cwd .. '\\YOUR_APP_NAME_HERE\\bin\\Debug\\net8.0\\YOUR_APP_NAME_HERE.dll',
+                        cwd .. '\\bin\\Debug\\net8.0\\YOUR_APP_NAME_HERE.dll'
+                    }
+
+                    for _, p in ipairs(paths_to_check) do
+                        local win_path = to_win(p)
+                        if vim.fn.filereadable(win_path) == 1 then
+                            return win_path
+                        end
+                    end
+
+                    return to_win(vim.fn.input('Path to DLL: ', cwd .. '\\bin\\Debug\\net8.0\\', 'file'))
                 end,
-                cwd = "${workspaceFolder}",
+                cwd = function()
+                    return vim.fn.getcwd():gsub("/", "\\")
+                end,
                 stopAtEntry = false,
                 justMyCode = true,
                 symbolOptions = {
-                loadAnySymbol = false, -- DO NOT load symbols for external libraries (Hangfire, etc.)
+                    searchMicrosoftSymbolServer = false,
+                    searchNuGetOrgSymbolServer = false,
                     moduleFilter = {
-                        mode = "include",
-                        names = { "YOUR_APP_NAME_HERE" } -- ONLY load symbols for your actual project name
+                        mode = "loadAllButExcluded",
+                        excludedModules = {}
                     }
                 },
-                env = {
-                    ASPNETCORE_ENVIRONMENT = "Development",
-                    ASPNETCORE_URLS = "https://localhost:44320",
-                },
+                env = function()
+                    local cwd = vim.fn.getcwd()
+                    local content_root = cwd
+
+                    -- Smart layout processing logic to stop path double-appending loops
+                    if not cwd:match("YOUR_APP_NAME_HERE$") then
+                        content_root = cwd .. "\\YOUR_APP_NAME_HERE"
+                    end
+
+                    content_root = content_root:gsub("/", "\\")
+
+                    return {
+                        ASPNETCORE_ENVIRONMENT = "Development",
+                        ASPNETCORE_URLS = "https://localhost:44320",
+                        ASPNETCORE_CONTENTROOT = content_root,
+                    }
+                end,
             },
         }
     end,
